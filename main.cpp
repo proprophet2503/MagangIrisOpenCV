@@ -8,9 +8,9 @@ using namespace std;
 int main() {
     
     // koefisien dari data set
-    float a = 0.008498;  
-    float b = -1.986033;  
-    float c = 124.624314;  
+    float a = 0.0077;  
+    float b = -2.0341;  
+    float c = 134.9859;  
 
     VideoCapture cap(0);  
     if (!cap.isOpened()){
@@ -86,12 +86,20 @@ int main() {
                 string contour_area_text = "Area: " + to_string(contour_area) + " px^2";
 
                 // Position the text on the frame
-                putText(frame, distance_text, Point(min_rect.center.x - 50, min_rect.center.y - 40),
+
+                if(object_pixel_width<=130){
+
+                    putText(frame, distance_text, Point(min_rect.center.x - 50, min_rect.center.y - 40),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y),
+                    putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                putText(frame, contour_area_text, Point(min_rect.center.x - 50, min_rect.center.y + 40),
+                    putText(frame, contour_area_text, Point(min_rect.center.x - 50, min_rect.center.y + 40),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
+                }else{
+                    string warning_text = "Stabilo terlalu dekat dari kamera\n, jarak sulit terdeteksi!";
+                    cout << warning_text << endl;
+                    putText(frame, warning_text, Point(50, 50), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
+                }
             }
         }
 
