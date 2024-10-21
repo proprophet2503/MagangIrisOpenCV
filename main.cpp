@@ -1,24 +1,29 @@
 #include <opencv2/opencv.hpp>
+#include<opencv2/videoio.hpp>
 #include <iostream>
 
 using namespace cv;
 using namespace std;
 
 int main() {
-    // Coefficients for the quadratic regression formula
-    float c = 246.6666667;  // Coefficient for x^2
-    float b = -0.9583333333;  // Coefficient for x
-    float a = 0.0010416667;  // Constant term
+    
+    // koefisien dari data set
+    float a = 0.008498;  
+    float b = -1.986033;  
+    float c = 124.624314;  
 
-    VideoCapture cap(0);  // Open default camera
-    if (!cap.isOpened()) return -1;
+    VideoCapture cap(0);  
+    if (!cap.isOpened()){
+        return -1;
+    } 
 
     Mat frame;
     while (true) {
         cap >> frame;
-        if (frame.empty()) break;
+        if (frame.empty()){
+            break;
+        } 
 
-        // Convert to HSV and detect yellow color
         Mat hsv_frame, mask;
         cvtColor(frame, hsv_frame, COLOR_BGR2HSV);
 
@@ -35,7 +40,7 @@ int main() {
         morphologyEx(mask, mask, MORPH_CLOSE, kernel);
 
         // Find contours of the detected yellow object
-        std::vector<std::vector<Point>> contours;
+        vector<vector<Point>> contours;
         findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE); // RETR_EXTERNAL to get the external contour
 
         if (contours.size() > 0) {
@@ -67,33 +72,36 @@ int main() {
                 // Use the quadratic regression formula to calculate the real-life distance
                 float calculated_distance = a * pow(object_pixel_width, 2) + b * object_pixel_width + c;
 
-                // Output the calculated distance and pixel width to the console
-                std::cout << "Calculated Real-Life Distance (cm): " << calculated_distance << std::endl;
-                std::cout << "Pixel Width: " << object_pixel_width << std::endl;
+                // Calculate the contour area in pixels
+                double contour_area = contourArea(contours[largest_contour_index]);
 
-                // Display the distance and pixel width on the video frame
+                // Output the calculated distance, pixel width, and contour area to the console
+                cout << "Calculated Real-Life Distance (cm): " << calculated_distance << endl;
+                cout << "Pixel Width: " << object_pixel_width << endl;
+                cout << "Contour Area (pixels): " << contour_area << endl;
+
+                // Display the distance, pixel width, and contour area on the video frame
                 string distance_text = "Distance: " + to_string(calculated_distance) + " cm";
                 string pixel_width_text = "Pixel Width: " + to_string(object_pixel_width) + " px";
+                string contour_area_text = "Area: " + to_string(contour_area) + " px^2";
 
                 // Position the text on the frame
-                putText(frame, distance_text, Point(min_rect.center.x - 50, min_rect.center.y - 20),
+                putText(frame, distance_text, Point(min_rect.center.x - 50, min_rect.center.y - 40),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y + 20),
+                putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y),
+                        FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
+                putText(frame, contour_area_text, Point(min_rect.center.x - 50, min_rect.center.y + 40),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
             }
         }
 
-        // Show the original frame with the detected object, distance, and pixel width
-        imshow("Original Frame", frame);
-
-        // Show the HSV frame
+        imshow("Camera", frame);
         imshow("HSV Frame", hsv_frame);
+        imshow("Stabilo Kuning Terdeteksi", mask);
 
-        // Show the black-and-white mask of the detected object
-        imshow("Black and White Mask", mask);
-
-        // Exit the loop if 'q' is pressed
-        if (waitKey(30) == 'q') break;
+        if (waitKey(30) == 'q') {
+            break;
+        }
     }
 
     // Release the camera
