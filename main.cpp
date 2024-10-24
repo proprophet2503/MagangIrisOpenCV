@@ -26,27 +26,20 @@ int main() {
 
         Mat hsv_frame, mask;
         cvtColor(frame, hsv_frame, COLOR_BGR2HSV);
-
-        // Adjust HSV range for yellow color based on the image
-        Scalar lower_yellow(20, 70, 70);  // Lower bound for yellow (adjusted)
-        Scalar upper_yellow(40, 255, 255);  // Upper bound for yellow (adjusted)
+        
+        Scalar lower_yellow(20, 70, 70);  
+        Scalar upper_yellow(40, 255, 255); 
         inRange(hsv_frame, lower_yellow, upper_yellow, mask);
+    
+        GaussianBlur(mask, mask, Size(9, 9), 2);
 
-
-        Mat filtered_mask;
-        bilateralFilter(mask, filtered_mask, 9, 75, 75);
-
-        Mat mask_filtered;
-        // Use morphological closing to fill small gaps and smooth the object
         Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
-        morphologyEx(filtered_mask, mask_filtered, MORPH_CLOSE, kernel);
+        morphologyEx(mask, mask, MORPH_CLOSE, kernel);
 
-        // Find contours of the detected yellow object
         vector<vector<Point>> contours;
-        findContours(mask_filtered, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE); // RETR_EXTERNAL to get the external contour
+        findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE); 
 
         if (contours.size() > 0) {
-            // Find the largest contour by area
             int largest_contour_index = 0;
             double max_area = contourArea(contours[0]);
             for (size_t i = 1; i < contours.size(); i++) {
@@ -57,67 +50,43 @@ int main() {
                 }
             }
 
-            // Get the minimum area rectangle for the largest contour
             RotatedRect min_rect = minAreaRect(contours[largest_contour_index]);
 
-            // Draw the rotated rectangle on the frame
             Point2f rect_points[4];
             min_rect.points(rect_points);
             for (int j = 0; j < 4; j++) {
                 line(frame, rect_points[j], rect_points[(j + 1) % 4], Scalar(0, 255, 0), 2);
             }
 
-            // Calculate the object pixel width from the rectangle
             float object_pixel_width = min(min_rect.size.width, min_rect.size.height);
 
             if (object_pixel_width > 0) {
-                // Use the quadratic regression formula to calculate the real-life distance
-                float calculated_distance = a * pow(object_pixel_width, 2) + b * object_pixel_width + c;
+                float distance_reallife = a * pow(object_pixel_width, 2) + b * object_pixel_width + c;
 
-                // Calculate the contour area in pixels
-                double contour_area = contourArea(contours[largest_contour_index]);
-
-                // Output the calculated distance, pixel width, and contour area to the console
-                cout << "Calculated Real-Life Distance (cm): " << calculated_distance << endl;
-                // cout << "Pixel Width: " << object_pixel_width << endl;
-                // cout << "Contour Area (pixels): " << contour_area << endl;
-
-                // Display the distance, pixel width, and contour area on the video frame
-                string distance_text = "Distance: " + to_string(calculated_distance) + " cm";
-                // string pixel_width_text = "Pixel Width: " + to_string(object_pixel_width) + " px";
-                // string contour_area_text = "Area: " + to_string(contour_area) + " px^2";
-
+                cout << "Distance Real-Life (cm): " << distance_reallife << endl;
+                
+                string distance_text = "Distance: " + to_string(distance_reallife) + " cm";
                
                 if(object_pixel_width<=130){
-
                     putText(frame, distance_text, Point(min_rect.center.x - 50, min_rect.center.y - 40),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                    // putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y),
-                    //     FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                    // putText(frame, contour_area_text, Point(min_rect.center.x - 50, min_rect.center.y + 40),
-                    //     FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
                 }else{
-                    string warning_text = "Stabilo terlalu dekat dari kamera\n, jarak sulit terdeteksi!";
+                    string warning_text = "Stabilo terlalu dekat dari kamera, jarak sulit terdeteksi!";
                     cout << warning_text << endl;
                     putText(frame, warning_text, Point(50, 50), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
                 }
             }
         }
-
         imshow("Camera", frame);
         imshow("HSV Frame", hsv_frame);
-        imshow("Stabilo Kuning Terdeteksi", mask_filtered);
+        imshow("Stabilo Kuning Terdeteksi", mask);
 
         if (waitKey(30) == 'q') {
             break;
         }
     }
 
-    // Release the camera
     cap.release();
     
-    // // Close all OpenCV windows
-    // destroyAllWindows();
-
     return 0;
 }
