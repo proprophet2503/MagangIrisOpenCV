@@ -32,16 +32,18 @@ int main() {
         Scalar upper_yellow(40, 255, 255);  // Upper bound for yellow (adjusted)
         inRange(hsv_frame, lower_yellow, upper_yellow, mask);
 
-        // Apply Gaussian blur to reduce noise
-        GaussianBlur(mask, mask, Size(9, 9), 2);
 
+        Mat filtered_mask;
+        bilateralFilter(mask, filtered_mask, 9, 75, 75);
+
+        Mat mask_filtered;
         // Use morphological closing to fill small gaps and smooth the object
         Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
-        morphologyEx(mask, mask, MORPH_CLOSE, kernel);
+        morphologyEx(filtered_mask, mask_filtered, MORPH_CLOSE, kernel);
 
         // Find contours of the detected yellow object
         vector<vector<Point>> contours;
-        findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE); // RETR_EXTERNAL to get the external contour
+        findContours(mask_filtered, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE); // RETR_EXTERNAL to get the external contour
 
         if (contours.size() > 0) {
             // Find the largest contour by area
@@ -77,24 +79,23 @@ int main() {
 
                 // Output the calculated distance, pixel width, and contour area to the console
                 cout << "Calculated Real-Life Distance (cm): " << calculated_distance << endl;
-                cout << "Pixel Width: " << object_pixel_width << endl;
-                cout << "Contour Area (pixels): " << contour_area << endl;
+                // cout << "Pixel Width: " << object_pixel_width << endl;
+                // cout << "Contour Area (pixels): " << contour_area << endl;
 
                 // Display the distance, pixel width, and contour area on the video frame
                 string distance_text = "Distance: " + to_string(calculated_distance) + " cm";
-                string pixel_width_text = "Pixel Width: " + to_string(object_pixel_width) + " px";
-                string contour_area_text = "Area: " + to_string(contour_area) + " px^2";
+                // string pixel_width_text = "Pixel Width: " + to_string(object_pixel_width) + " px";
+                // string contour_area_text = "Area: " + to_string(contour_area) + " px^2";
 
-                // Position the text on the frame
-
+               
                 if(object_pixel_width<=130){
 
                     putText(frame, distance_text, Point(min_rect.center.x - 50, min_rect.center.y - 40),
                         FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                    putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y),
-                        FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
-                    putText(frame, contour_area_text, Point(min_rect.center.x - 50, min_rect.center.y + 40),
-                        FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
+                    // putText(frame, pixel_width_text, Point(min_rect.center.x - 50, min_rect.center.y),
+                    //     FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
+                    // putText(frame, contour_area_text, Point(min_rect.center.x - 50, min_rect.center.y + 40),
+                    //     FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 255, 255), 2);
                 }else{
                     string warning_text = "Stabilo terlalu dekat dari kamera\n, jarak sulit terdeteksi!";
                     cout << warning_text << endl;
@@ -105,7 +106,7 @@ int main() {
 
         imshow("Camera", frame);
         imshow("HSV Frame", hsv_frame);
-        imshow("Stabilo Kuning Terdeteksi", mask);
+        imshow("Stabilo Kuning Terdeteksi", mask_filtered);
 
         if (waitKey(30) == 'q') {
             break;
@@ -115,8 +116,8 @@ int main() {
     // Release the camera
     cap.release();
     
-    // Close all OpenCV windows
-    destroyAllWindows();
+    // // Close all OpenCV windows
+    // destroyAllWindows();
 
     return 0;
 }
